@@ -115,13 +115,19 @@
             drawBoard();
 
             if (checkWin(x, y)) {
-                alert(`${currentPlayer === playerColor ? '你' : 'AI'}赢了！`);
+                alert(`你赢了！`);
+                gameOver = true;
+                return;
+            }
+
+            if (isBoardFull()) {
+                alert('平局！');
                 gameOver = true;
                 return;
             }
 
             currentPlayer = aiColor;
-            aiMove();
+            setTimeout(aiMove, 500); // 给 AI 一些思考时间
         }
 
         function aiMove() {
@@ -144,7 +150,13 @@
             drawBoard();
 
             if (checkWin(move.x, move.y)) {
-                alert(`${currentPlayer === playerColor ? '你' : 'AI'}赢了！`);
+                alert(`AI 赢了！`);
+                gameOver = true;
+                return;
+            }
+
+            if (isBoardFull()) {
+                alert('平局！');
                 gameOver = true;
                 return;
             }
@@ -165,31 +177,23 @@
         }
 
         function getMediumMove() {
-            // 简单的防守策略
-            for (let x = 0; x < size; x++) {
-                for (let y = 0; y < size; y++) {
-                    if (!board[x][y]) {
-                        board[x][y] = playerColor;
-                        if (checkWin(x, y)) {
-                            board[x][y] = null;
-                            return { x, y };
-                        }
-                        board[x][y] = null;
-                    }
-                }
-            }
+            // 简单的防守和进攻策略
+            let move = findBestMove(1);
+            if (move) return move;
             return getRandomMove();
         }
 
         function getBestMove() {
-            // 简单的评分函数
+            // 使用 Alpha-Beta 剪枝的 Minimax 算法
             let bestScore = -Infinity;
-            let move;
+            let move = null;
+            let depth = 3; // 限制搜索深度
+
             for (let x = 0; x < size; x++) {
                 for (let y = 0; y < size; y++) {
                     if (!board[x][y]) {
                         board[x][y] = aiColor;
-                        let score = minimax(board, 0, false);
+                        let score = minimax(board, depth - 1, -Infinity, Infinity, false);
                         board[x][y] = null;
                         if (score > bestScore) {
                             bestScore = score;
@@ -201,12 +205,10 @@
             return move || getRandomMove();
         }
 
-        function minimax(board, depth, isMaximizing) {
-            if (checkWinFor(aiColor)) return 10 - depth;
-            if (checkWinFor(playerColor)) return depth - 10;
-            if (isBoardFull()) return 0;
-
-            if (depth >= 2) return 0; // 控制搜索深度
+        function minimax(board, depth, alpha, beta, isMaximizing) {
+            if (depth === 0 || gameOver) {
+                return evaluateBoard(board);
+            }
 
             if (isMaximizing) {
                 let maxEval = -Infinity;
@@ -214,9 +216,11 @@
                     for (let y = 0; y < size; y++) {
                         if (!board[x][y]) {
                             board[x][y] = aiColor;
-                            let eval = minimax(board, depth + 1, false);
+                            let eval = minimax(board, depth - 1, alpha, beta, false);
                             board[x][y] = null;
                             maxEval = Math.max(maxEval, eval);
+                            alpha = Math.max(alpha, eval);
+                            if (beta <= alpha) break;
                         }
                     }
                 }
@@ -227,14 +231,58 @@
                     for (let y = 0; y < size; y++) {
                         if (!board[x][y]) {
                             board[x][y] = playerColor;
-                            let eval = minimax(board, depth + 1, true);
+                            let eval = minimax(board, depth - 1, alpha, beta, true);
                             board[x][y] = null;
                             minEval = Math.min(minEval, eval);
+                            beta = Math.min(beta, eval);
+                            if (beta <= alpha) break;
                         }
                     }
                 }
                 return minEval;
             }
+        }
+
+        function evaluateBoard(board) {
+            // 简单的评分函数
+            let aiScore = calculateScore(board, aiColor);
+            let playerScore = calculateScore(board, playerColor);
+            return aiScore - playerScore;
+        }
+
+        function calculateScore(board, color) {
+            let score = 0;
+            for (let x = 0; x < size; x++) {
+                for (let y = 0; y < size; y++) {
+                    if (board[x][y] === color) {
+                        score += countSequences(x, y, color);
+                    }
+                }
+            }
+            return score;
+        }
+
+        function countSequences(x, y, color) {
+            let directions = [
+                { dx: 1, dy: 0 },
+                { dx: 0, dy: 1 },
+                { dx: 1, dy: 1 },
+                { dx: 1, dy: -1 }
+            ];
+            let total = 0;
+            for (let dir of directions) {
+                let count = 1;
+                let i = 1;
+                while (true) {
+                    let nx = x + dir.dx * i;
+                    let ny = y + dir.dy * i;
+                    if (nx < 0 || ny < 0 || nx >= size || ny >= size || board[nx][ny] !== color) break;
+                    count++;
+                    i++;
+                }
+                total += Math.pow(10, count);
+            }
+            return total;
         }
 
         function checkWin(x, y) {
@@ -244,23 +292,8 @@
                    checkDirection(x, y, 1, -1);  // 斜对角 /
         }
 
-        function checkWinFor(color) {
-            for (let x = 0; x < size; x++) {
-                for (let y = 0; y < size; y++) {
-                    if (board[x][y] === color) {
-                        if (checkDirection(x, y, 1, 0, color) ||
-                            checkDirection(x, y, 0, 1, color) ||
-                            checkDirection(x, y, 1, 1, color) ||
-                            checkDirection(x, y, 1, -1, color)) {
-                            return true;
-                        }
-                    }
-                }
-            }
-            return false;
-        }
-
-        function checkDirection(x, y, dx, dy, color = currentPlayer) {
+        function checkDirection(x, y, dx, dy) {
+            let color = board[x][y];
             let count = 1;
             for (let i = 1; i < 5; i++) {
                 let nx = x + i * dx;
