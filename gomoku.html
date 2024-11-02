@@ -36,7 +36,7 @@
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        const size = 13; // 棋盘大小
+        const size = 10; // 棋盘大小
         const gridSize = canvas.width / size;
         let board = [];
         let currentPlayer = 'black';
@@ -187,7 +187,7 @@
             // 使用 Alpha-Beta 剪枝的 Minimax 算法
             let bestScore = -Infinity;
             let move = null;
-            let depth = 2; // 限制搜索深度
+            let depth = 1; // 限制搜索深度
 
             for (let x = 0; x < size; x++) {
                 for (let y = 0; y < size; y++) {
