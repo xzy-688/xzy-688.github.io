@@ -7,9 +7,9 @@
 - 数学物理
 - 机器学习
 
-## 学习笔记
+## 学习笔记 (study_notes.md)
 
-## 心得体会
+## 心得体会 (reflections.md)
 
 ## 联系方式
 - 邮箱: your_email@example.com
