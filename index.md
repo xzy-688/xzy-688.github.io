@@ -14,6 +14,9 @@
 
 ## [心得体会](reflections.md) 
 
+## 休闲娱乐
+- [玩五子棋游戏](gomoku.html)
+
 ## 联系方式
 - 邮箱: your_email@example.com
 
