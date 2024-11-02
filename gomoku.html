@@ -1,214 +1,293 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <title>五子棋游戏</title>
     <style>
-        #board {
-            display: grid;
-            grid-template-columns: repeat(15, 40px);
-            grid-template-rows: repeat(15, 40px);
-            gap: 2px;
-        }
-        .cell {
-            width: 40px;
-            height: 40px;
+        canvas {
             background-color: #f0d9b5;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            cursor: pointer;
+            border: 1px solid #333;
         }
-        .cell.X.black { color: black; }
-        .cell.X.white { color: white; }
-        .cell.O { color: red; }
+        #controls {
+            margin-bottom: 10px;
+        }
+        #controls label, #controls select, #controls button {
+            margin-right: 10px;
+        }
     </style>
 </head>
 <body>
-    <h1>五子棋游戏</h1>
-    
-    <!-- 难度选择 -->
-    <label for="difficulty">选择难度:</label>
-    <select id="difficulty">
-        <option value="easy">简单</option>
-        <option value="medium">中等</option>
-        <option value="hard">困难</option>
-    </select>
-    
-    <!-- 颜色选择 -->
-    <label for="color">选择颜色:</label>
-    <select id="color">
-        <option value="black">黑色</option>
-        <option value="white">白色</option>
-    </select>
-
-    <div id="board"></div>
+    <div id="controls">
+        <label for="difficulty">选择难度：</label>
+        <select id="difficulty">
+            <option value="easy">简单</option>
+            <option value="medium">中等</option>
+            <option value="hard">困难</option>
+        </select>
+        <label for="playerColor">选择棋子颜色：</label>
+        <select id="playerColor">
+            <option value="black">黑棋</option>
+            <option value="white">白棋</option>
+        </select>
+        <button id="startButton">开始游戏</button>
+    </div>
+    <canvas id="gameCanvas" width="600" height="600"></canvas>
 
     <script>
-        const board = document.getElementById('board');
-        const rows = 15;
-        const cols = 15;
-        let currentPlayer = 'X';
-        const cells = Array.from({ length: rows }, () => Array(cols).fill(null));
-        let playerColor = 'black'; // 默认颜色
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const size = 15; // 棋盘大小
+        const gridSize = canvas.width / size;
+        let board = [];
+        let currentPlayer = 'black';
+        let gameOver = false;
+        let aiColor = 'white';
+        let playerColor = 'black';
+        let difficulty = 'easy';
 
-        // 初始化棋盘
-        for (let row = 0; row < rows; row++) {
-            for (let col = 0; col < cols; col++) {
-                const cell = document.createElement('div');
-                cell.classList.add('cell');
-                cell.addEventListener('click', () => {
-                    if (currentPlayer === 'X' && !cell.textContent) {
-                        placeMove(row, col, 'X', playerColor);
-                        if (checkWin(row, col, 'X')) {
-                            alert('你赢了！');
-                            resetBoard();
-                        } else {
-                            aiMove();
-                        }
-                    }
-                });
-                board.appendChild(cell);
-                cells[row][col] = cell;
+        document.getElementById('startButton').addEventListener('click', startGame);
+        canvas.addEventListener('click', handlePlayerMove);
+
+        function startGame() {
+            // 初始化参数
+            board = Array(size).fill(null).map(() => Array(size).fill(null));
+            currentPlayer = 'black';
+            gameOver = false;
+            difficulty = document.getElementById('difficulty').value;
+            playerColor = document.getElementById('playerColor').value;
+            aiColor = playerColor === 'black' ? 'white' : 'black';
+            drawBoard();
+
+            // 如果 AI 先手
+            if (currentPlayer === aiColor) {
+                aiMove();
             }
         }
 
-        // 设置难度选择
-        let aiMove = easyMove;
-        document.getElementById('difficulty').addEventListener('change', function() {
-            switch (this.value) {
+        function drawBoard() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // 绘制棋盘线
+            for (let i = 0; i < size; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * gridSize + gridSize / 2, gridSize / 2);
+                ctx.lineTo(i * gridSize + gridSize / 2, canvas.height - gridSize / 2);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(gridSize / 2, i * gridSize + gridSize / 2);
+                ctx.lineTo(canvas.width - gridSize / 2, i * gridSize + gridSize / 2);
+                ctx.stroke();
+            }
+
+            // 绘制棋子
+            for (let x = 0; x < size; x++) {
+                for (let y = 0; y < size; y++) {
+                    if (board[x][y]) {
+                        drawPiece(x, y, board[x][y]);
+                    }
+                }
+            }
+        }
+
+        function drawPiece(x, y, color) {
+            ctx.beginPath();
+            ctx.arc(
+                x * gridSize + gridSize / 2,
+                y * gridSize + gridSize / 2,
+                gridSize / 2 - 2,
+                0,
+                2 * Math.PI
+            );
+            ctx.fillStyle = color;
+            ctx.fill();
+        }
+
+        function handlePlayerMove(event) {
+            if (gameOver || currentPlayer !== playerColor) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = Math.floor((event.clientX - rect.left) / gridSize);
+            const y = Math.floor((event.clientY - rect.top) / gridSize);
+
+            if (board[x][y]) return;
+
+            board[x][y] = currentPlayer;
+            drawBoard();
+
+            if (checkWin(x, y)) {
+                alert(`${currentPlayer === playerColor ? '你' : 'AI'}赢了！`);
+                gameOver = true;
+                return;
+            }
+
+            currentPlayer = aiColor;
+            aiMove();
+        }
+
+        function aiMove() {
+            if (gameOver) return;
+
+            let move;
+            switch (difficulty) {
                 case 'easy':
-                    aiMove = easyMove;
+                    move = getRandomMove();
                     break;
                 case 'medium':
-                    aiMove = mediumMove;
+                    move = getMediumMove();
                     break;
                 case 'hard':
-                    aiMove = hardMove;
+                    move = getBestMove();
                     break;
             }
-        });
 
-        // 设置颜色选择
-        document.getElementById('color').addEventListener('change', function() {
-            playerColor = this.value;
-        });
+            board[move.x][move.y] = currentPlayer;
+            drawBoard();
 
-        // AI 简单难度：随机移动
-        function easyMove() {
-            let emptyCells = [];
-            for (let row = 0; row < rows; row++) {
-                for (let col = 0; col < cols; col++) {
-                    if (!cells[row][col].textContent) emptyCells.push([row, col]);
-                }
+            if (checkWin(move.x, move.y)) {
+                alert(`${currentPlayer === playerColor ? '你' : 'AI'}赢了！`);
+                gameOver = true;
+                return;
             }
-            const [row, col] = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-            placeMove(row, col, 'O');
-            if (checkWin(row, col, 'O')) alert('AI 赢了！');
+
+            currentPlayer = playerColor;
         }
 
-        // AI 中等难度：尝试在玩家棋子附近下棋
-        function mediumMove() {
-            for (let row = 0; row < rows; row++) {
-                for (let col = 0; col < cols; col++) {
-                    if (!cells[row][col].textContent && isNearPlayer(row, col)) {
-                        placeMove(row, col, 'O');
-                        if (checkWin(row, col, 'O')) alert('AI 赢了！');
-                        return;
+        function getRandomMove() {
+            let emptyCells = [];
+            for (let x = 0; x < size; x++) {
+                for (let y = 0; y < size; y++) {
+                    if (!board[x][y]) {
+                        emptyCells.push({ x, y });
                     }
                 }
             }
-            easyMove();  // 如果没有靠近玩家的棋子位置可下，则随机
+            return emptyCells[Math.floor(Math.random() * emptyCells.length)];
         }
 
-        function isNearPlayer(row, col) {
-            for (let i = -1; i <= 1; i++) {
-                for (let j = -1; j <= 1; j++) {
-                    if (cells[row + i] && cells[row + i][col + j] && cells[row + i][col + j].textContent === 'X') {
-                        return true;
+        function getMediumMove() {
+            // 简单的防守策略
+            for (let x = 0; x < size; x++) {
+                for (let y = 0; y < size; y++) {
+                    if (!board[x][y]) {
+                        board[x][y] = playerColor;
+                        if (checkWin(x, y)) {
+                            board[x][y] = null;
+                            return { x, y };
+                        }
+                        board[x][y] = null;
+                    }
+                }
+            }
+            return getRandomMove();
+        }
+
+        function getBestMove() {
+            // 简单的评分函数
+            let bestScore = -Infinity;
+            let move;
+            for (let x = 0; x < size; x++) {
+                for (let y = 0; y < size; y++) {
+                    if (!board[x][y]) {
+                        board[x][y] = aiColor;
+                        let score = minimax(board, 0, false);
+                        board[x][y] = null;
+                        if (score > bestScore) {
+                            bestScore = score;
+                            move = { x, y };
+                        }
+                    }
+                }
+            }
+            return move || getRandomMove();
+        }
+
+        function minimax(board, depth, isMaximizing) {
+            if (checkWinFor(aiColor)) return 10 - depth;
+            if (checkWinFor(playerColor)) return depth - 10;
+            if (isBoardFull()) return 0;
+
+            if (depth >= 2) return 0; // 控制搜索深度
+
+            if (isMaximizing) {
+                let maxEval = -Infinity;
+                for (let x = 0; x < size; x++) {
+                    for (let y = 0; y < size; y++) {
+                        if (!board[x][y]) {
+                            board[x][y] = aiColor;
+                            let eval = minimax(board, depth + 1, false);
+                            board[x][y] = null;
+                            maxEval = Math.max(maxEval, eval);
+                        }
+                    }
+                }
+                return maxEval;
+            } else {
+                let minEval = Infinity;
+                for (let x = 0; x < size; x++) {
+                    for (let y = 0; y < size; y++) {
+                        if (!board[x][y]) {
+                            board[x][y] = playerColor;
+                            let eval = minimax(board, depth + 1, true);
+                            board[x][y] = null;
+                            minEval = Math.min(minEval, eval);
+                        }
+                    }
+                }
+                return minEval;
+            }
+        }
+
+        function checkWin(x, y) {
+            return checkDirection(x, y, 1, 0) || // 水平
+                   checkDirection(x, y, 0, 1) || // 垂直
+                   checkDirection(x, y, 1, 1) || // 斜对角 \
+                   checkDirection(x, y, 1, -1);  // 斜对角 /
+        }
+
+        function checkWinFor(color) {
+            for (let x = 0; x < size; x++) {
+                for (let y = 0; y < size; y++) {
+                    if (board[x][y] === color) {
+                        if (checkDirection(x, y, 1, 0, color) ||
+                            checkDirection(x, y, 0, 1, color) ||
+                            checkDirection(x, y, 1, 1, color) ||
+                            checkDirection(x, y, 1, -1, color)) {
+                            return true;
+                        }
                     }
                 }
             }
             return false;
         }
 
-        // AI 困难难度：使用简单的 Minimax 算法
-        function hardMove() {
-            let bestScore = -Infinity;
-            let move;
-            for (let row = 0; row < rows; row++) {
-                for (let col = 0; col < cols; col++) {
-                    if (!cells[row][col].textContent) {
-                        cells[row][col].textContent = 'O';
-                        let score = minimax(0, false);
-                        cells[row][col].textContent = '';
-                        if (score > bestScore) {
-                            bestScore = score;
-                            move = { row, col };
-                        }
-                    }
-                }
-            }
-            placeMove(move.row, move.col, 'O');
-            if (checkWin(move.row, move.col, 'O')) alert('AI 赢了！');
-        }
-
-        function minimax(depth, isMaximizing) {
-            if (checkWinCondition('O')) return 10 - depth;
-            if (checkWinCondition('X')) return depth - 10;
-
-            let bestScore = isMaximizing ? -Infinity : Infinity;
-            for (let row = 0; row < rows; row++) {
-                for (let col = 0; col < cols; col++) {
-                    if (!cells[row][col].textContent) {
-                        cells[row][col].textContent = isMaximizing ? 'O' : 'X';
-                        let score = minimax(depth + 1, !isMaximizing);
-                        cells[row][col].textContent = '';
-                        bestScore = isMaximizing ? Math.max(score, bestScore) : Math.min(score, bestScore);
-                    }
-                }
-            }
-            return bestScore;
-        }
-
-        // 放置棋子
-        function placeMove(row, col, player, color = 'black') {
-            cells[row][col].textContent = player;
-            cells[row][col].classList.add(player, color);
-        }
-
-        // 检查胜利条件
-        function checkWin(row, col, player) {
-            return checkDirection(row, col, player, 1, 0) ||
-                   checkDirection(row, col, player, 0, 1) ||
-                   checkDirection(row, col, player, 1, 1) ||
-                   checkDirection(row, col, player, 1, -1);
-        }
-
-        function checkDirection(row, col, player, dx, dy) {
+        function checkDirection(x, y, dx, dy, color = currentPlayer) {
             let count = 1;
-            for (let dir of [-1, 1]) {
-                for (let i = 1; i < 5; i++) {
-                    const r = row + i * dir * dx;
-                    const c = col + i * dir * dy;
-                    if (cells[r] && cells[r][c] && cells[r][c].textContent === player) count++;
-                    else break;
-                }
+            for (let i = 1; i < 5; i++) {
+                let nx = x + i * dx;
+                let ny = y + i * dy;
+                if (nx < 0 || ny < 0 || nx >= size || ny >= size || board[nx][ny] !== color) break;
+                count++;
+            }
+            for (let i = 1; i < 5; i++) {
+                let nx = x - i * dx;
+                let ny = y - i * dy;
+                if (nx < 0 || ny < 0 || nx >= size || ny >= size || board[nx][ny] !== color) break;
+                count++;
             }
             return count >= 5;
         }
 
-        // 重置棋盘
-        function resetBoard() {
-            for (let row = 0; row < rows; row++) {
-                for (let col = 0; col < cols; col++) {
-                    cells[row][col].textContent = '';
-                    cells[row][col].classList.remove('X', 'O', 'black', 'white');
+        function isBoardFull() {
+            for (let x = 0; x < size; x++) {
+                for (let y = 0; y < size; y++) {
+                    if (!board[x][y]) return false;
                 }
             }
-            currentPlayer = 'X';
+            return true;
         }
+
+        // 初始化游戏
+        startGame();
     </script>
 </body>
 </html>
