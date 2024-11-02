@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>五子棋游戏</title>
+    <style>
+        #board {
+            display: grid;
+            grid-template-columns: repeat(15, 40px);
+            grid-template-rows: repeat(15, 40px);
+            gap: 2px;
+        }
+        .cell {
+            width: 40px;
+            height: 40px;
+            background-color: #f0d9b5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .cell.X { color: black; }
+        .cell.O { color: red; }
+    </style>
+</head>
+<body>
+    <h1>五子棋游戏</h1>
+    <label for="difficulty">选择难度:</label>
+    <select id="difficulty">
+        <option value="easy">简单</option>
+        <option value="medium">中等</option>
+        <option value="hard">困难</option>
+    </select>
+    <div id="board"></div>
+
+    <script>
+        const board = document.getElementById('board');
+        const rows = 15;
+        const cols = 15;
+        let currentPlayer = 'X';
+        const cells = Array.from({ length: rows }, () => Array(cols).fill(null));
+
+        // 初始化棋盘
+        for (let row = 0; row < rows; row++) {
+            for (let col = 0; col < cols; col++) {
+                const cell = document.createElement('div');
+                cell.classList.add('cell');
+                cell.addEventListener('click', () => {
+                    if (currentPlayer === 'X' && !cell.textContent) {
+                        placeMove(row, col, 'X');
+                        if (checkWin(row, col, 'X')) {
+                            alert('你赢了！');
+                            resetBoard();
+                        } else {
+                            aiMove();
+                        }
+                    }
+                });
+                board.appendChild(cell);
+                cells[row][col] = cell;
+            }
+        }
+
+        // 设置难度选择
+        let aiMove = easyMove;
+        document.getElementById('difficulty').addEventListener('change', function() {
+            switch (this.value) {
+                case 'easy':
+                    aiMove = easyMove;
+                    break;
+                case 'medium':
+                    aiMove = mediumMove;
+                    break;
+                case 'hard':
+                    aiMove = hardMove;
+                    break;
+            }
+        });
+
+        // AI 简单难度：随机移动
+        function easyMove() {
+            let emptyCells = [];
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    if (!cells[row][col].textContent) emptyCells.push([row, col]);
+                }
+            }
+            const [row, col] = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+            placeMove(row, col, 'O');
+            if (checkWin(row, col, 'O')) alert('AI 赢了！');
+        }
+
+        // AI 中等难度：尝试在玩家棋子附近下棋
+        function mediumMove() {
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    if (!cells[row][col].textContent && isNearPlayer(row, col)) {
+                        placeMove(row, col, 'O');
+                        if (checkWin(row, col, 'O')) alert('AI 赢了！');
+                        return;
+                    }
+                }
+            }
+            easyMove();  // 如果没有靠近玩家的棋子位置可下，则随机
+        }
+
+        function isNearPlayer(row, col) {
+            // 检查是否在玩家的棋子附近
+            for (let i = -1; i <= 1; i++) {
+                for (let j = -1; j <= 1; j++) {
+                    if (cells[row + i] && cells[row + i][col + j] && cells[row + i][col + j].textContent === 'X') {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        // AI 困难难度：使用简单的 Minimax 算法
+        function hardMove() {
+            let bestScore = -Infinity;
+            let move;
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    if (!cells[row][col].textContent) {
+                        cells[row][col].textContent = 'O';
+                        let score = minimax(0, false);
+                        cells[row][col].textContent = '';
+                        if (score > bestScore) {
+                            bestScore = score;
+                            move = { row, col };
+                        }
+                    }
+                }
+            }
+            placeMove(move.row, move.col, 'O');
+            if (checkWin(move.row, move.col, 'O')) alert('AI 赢了！');
+        }
+
+        function minimax(depth, isMaximizing) {
+            if (checkWinCondition('O')) return 10 - depth;
+            if (checkWinCondition('X')) return depth - 10;
+
+            let bestScore = isMaximizing ? -Infinity : Infinity;
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    if (!cells[row][col].textContent) {
+                        cells[row][col].textContent = isMaximizing ? 'O' : 'X';
+                        let score = minimax(depth + 1, !isMaximizing);
+                        cells[row][col].textContent = '';
+                        bestScore = isMaximizing ? Math.max(score, bestScore) : Math.min(score, bestScore);
+                    }
+                }
+            }
+            return bestScore;
+        }
+
+        // 放置棋子
+        function placeMove(row, col, player) {
+            cells[row][col].textContent = player;
+            cells[row][col].classList.add(player);
+        }
+
+        // 检查胜利条件
+        function checkWin(row, col, player) {
+            return checkDirection(row, col, player, 1, 0) || // 水平
+                   checkDirection(row, col, player, 0, 1) || // 垂直
+                   checkDirection(row, col, player, 1, 1) || // 主对角线
+                   checkDirection(row, col, player, 1, -1);  // 副对角线
+        }
+
+        function checkDirection(row, col, player, dx, dy) {
+            let count = 1;
+            for (let dir of [-1, 1]) {
+                for (let i = 1; i < 5; i++) {
+                    const r = row + i * dir * dx;
+                    const c = col + i * dir * dy;
+                    if (cells[r] && cells[r][c] && cells[r][c].textContent === player) count++;
+                    else break;
+                }
+            }
+            return count >= 5;
+        }
+
+        // 重置棋盘
+        function resetBoard() {
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    cells[row][col].textContent = '';
+                    cells[row][col].classList.remove('X', 'O');
+                }
+            }
+            currentPlayer = 'X';
+        }
+    </script>
+</body>
+</html>
