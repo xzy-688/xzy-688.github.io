@@ -20,7 +20,7 @@
 - [五子棋](gomoku.html)
 - [扫雷](bomb.html)
 
-说明：感谢GPT开源！
+
 
 ## 联系方式
 - 邮箱: your_email@example.com
