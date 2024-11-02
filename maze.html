@@ -6,6 +6,7 @@
     <style>
         body {
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             height: 100vh;
@@ -15,9 +16,8 @@
         }
         #maze-container {
             display: grid;
-            grid-template-columns: repeat(10, 40px);
-            grid-template-rows: repeat(10, 40px);
             gap: 2px;
+            margin-top: 20px;
         }
         .cell {
             width: 40px;
@@ -42,43 +42,75 @@
             background-color: #ff5722;
             color: white;
         }
-        #message {
-            margin-top: 20px;
-            font-size: 20px;
+        #controls {
             text-align: center;
+            margin-top: 10px;
+        }
+        #timer {
+            font-size: 20px;
+            margin-top: 10px;
         }
     </style>
 </head>
 <body>
-    <div id="game-container">
-        <div id="maze-container"></div>
-        <div id="message">使用方向键找到出口！</div>
+    <h1>迷宫游戏</h1>
+    <div id="controls">
+        <button onclick="startGame()">开始游戏</button>
+        <div id="timer">时间: 0 秒</div>
     </div>
+    <div id="maze-container"></div>
+    <div id="message">使用方向键找到出口！</div>
 
     <script>
-        const mazeLayout = [
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-            [1, 0, 0, 0, 1, 0, 0, 0, 0, 1],
-            [1, 0, 1, 0, 1, 0, 1, 1, 0, 1],
-            [1, 0, 1, 0, 0, 0, 0, 1, 0, 1],
-            [1, 0, 1, 1, 1, 1, 0, 1, 0, 1],
-            [1, 0, 0, 0, 0, 1, 0, 1, 0, 1],
-            [1, 1, 1, 1, 0, 1, 0, 1, 0, 1],
-            [1, 0, 0, 0, 0, 0, 0, 1, 0, 1],
-            [1, 0, 1, 1, 1, 1, 1, 1, 0, 1],
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-        ];
-        
+        const rows = 15;
+        const cols = 15;
+        let mazeLayout;
         const mazeContainer = document.getElementById('maze-container');
         const message = document.getElementById('message');
+        const timerDisplay = document.getElementById('timer');
+        let playerPosition = { x: 1, y: 1 };
+        const exitPosition = { x: cols - 2, y: rows - 2 };
+        let gameStarted = false;
+        let gameOver = false;
+        let timer;
+        let timeElapsed = 0;
 
-        const playerPosition = { x: 1, y: 1 }; // 初始位置
-        const exitPosition = { x: 8, y: 8 }; // 出口位置
+        mazeContainer.style.gridTemplateColumns = `repeat(${cols}, 40px)`;
+        mazeContainer.style.gridTemplateRows = `repeat(${rows}, 40px)`;
+
+        function generateRandomMaze() {
+            // 初始化迷宫全为墙壁
+            mazeLayout = Array.from({ length: rows }, () => Array(cols).fill(1));
+
+            // 深度优先生成迷宫
+            function carvePath(x, y) {
+                const directions = [
+                    [0, -2], [0, 2], [-2, 0], [2, 0] // 上，下，左，右
+                ].sort(() => Math.random() - 0.5); // 随机打乱方向
+
+                mazeLayout[y][x] = 0; // 设置起始点为通路
+
+                for (const [dx, dy] of directions) {
+                    const nx = x + dx;
+                    const ny = y + dy;
+                    if (ny > 0 && ny < rows - 1 && nx > 0 && nx < cols - 1 && mazeLayout[ny][nx] === 1) {
+                        mazeLayout[y + dy / 2][x + dx / 2] = 0; // 打通两个格子之间的墙
+                        carvePath(nx, ny); // 递归挖通
+                    }
+                }
+            }
+
+            carvePath(1, 1); // 从起点开始生成迷宫
+
+            // 确保起点和终点是通路
+            mazeLayout[1][1] = 0;
+            mazeLayout[exitPosition.y][exitPosition.x] = 0;
+        }
 
         function renderMaze() {
             mazeContainer.innerHTML = '';
-            for (let row = 0; row < mazeLayout.length; row++) {
-                for (let col = 0; col < mazeLayout[row].length; col++) {
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
                     const cell = document.createElement('div');
                     cell.classList.add('cell');
                     if (mazeLayout[row][col] === 1) {
@@ -97,6 +129,30 @@
             }
         }
 
+        function startGame() {
+            // 重置游戏状态
+            playerPosition = { x: 1, y: 1 };
+            gameOver = false;
+            gameStarted = true;
+            timeElapsed = 0;
+            message.textContent = "使用方向键找到出口！";
+            clearInterval(timer);
+            timerDisplay.textContent = "时间: 0 秒";
+            
+            generateRandomMaze(); // 生成新的随机迷宫
+            renderMaze(); // 渲染新迷宫
+
+            timer = setInterval(updateTimer, 1000);
+            document.addEventListener('keydown', handleKeyDown);
+        }
+
+        function updateTimer() {
+            if (!gameOver && gameStarted) {
+                timeElapsed++;
+                timerDisplay.textContent = `时间: ${timeElapsed} 秒`;
+            }
+        }
+
         function movePlayer(dx, dy) {
             const newX = playerPosition.x + dx;
             const newY = playerPosition.y + dy;
@@ -111,12 +167,15 @@
 
         function checkWin() {
             if (playerPosition.x === exitPosition.x && playerPosition.y === exitPosition.y) {
-                message.textContent = "恭喜你！你找到出口了！";
+                gameOver = true;
+                clearInterval(timer);
+                message.textContent = `恭喜你！你找到出口了！用时: ${timeElapsed} 秒`;
                 document.removeEventListener('keydown', handleKeyDown);
             }
         }
 
         function handleKeyDown(event) {
+            if (!gameStarted || gameOver) return;
             switch (event.key) {
                 case 'ArrowUp':
                     movePlayer(0, -1);
@@ -133,7 +192,8 @@
             }
         }
 
-        document.addEventListener('keydown', handleKeyDown);
+        // 初次渲染迷宫
+        generateRandomMaze();
         renderMaze();
     </script>
 </body>
