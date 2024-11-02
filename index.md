@@ -19,6 +19,7 @@
 ## 休闲娱乐
 - [五子棋](gomoku.html)
 - [扫雷](bomb.html)
+- [迷宫](maze.html)
 
 
 
