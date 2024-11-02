@@ -20,18 +20,29 @@
             font-size: 24px;
             cursor: pointer;
         }
-        .cell.X { color: black; }
+        .cell.X.black { color: black; }
+        .cell.X.white { color: white; }
         .cell.O { color: red; }
     </style>
 </head>
 <body>
     <h1>五子棋游戏</h1>
+    
+    <!-- 难度选择 -->
     <label for="difficulty">选择难度:</label>
     <select id="difficulty">
         <option value="easy">简单</option>
         <option value="medium">中等</option>
         <option value="hard">困难</option>
     </select>
+    
+    <!-- 颜色选择 -->
+    <label for="color">选择颜色:</label>
+    <select id="color">
+        <option value="black">黑色</option>
+        <option value="white">白色</option>
+    </select>
+
     <div id="board"></div>
 
     <script>
@@ -40,6 +51,7 @@
         const cols = 15;
         let currentPlayer = 'X';
         const cells = Array.from({ length: rows }, () => Array(cols).fill(null));
+        let playerColor = 'black'; // 默认颜色
 
         // 初始化棋盘
         for (let row = 0; row < rows; row++) {
@@ -48,7 +60,7 @@
                 cell.classList.add('cell');
                 cell.addEventListener('click', () => {
                     if (currentPlayer === 'X' && !cell.textContent) {
-                        placeMove(row, col, 'X');
+                        placeMove(row, col, 'X', playerColor);
                         if (checkWin(row, col, 'X')) {
                             alert('你赢了！');
                             resetBoard();
@@ -76,6 +88,11 @@
                     aiMove = hardMove;
                     break;
             }
+        });
+
+        // 设置颜色选择
+        document.getElementById('color').addEventListener('change', function() {
+            playerColor = this.value;
         });
 
         // AI 简单难度：随机移动
@@ -106,7 +123,6 @@
         }
 
         function isNearPlayer(row, col) {
-            // 检查是否在玩家的棋子附近
             for (let i = -1; i <= 1; i++) {
                 for (let j = -1; j <= 1; j++) {
                     if (cells[row + i] && cells[row + i][col + j] && cells[row + i][col + j].textContent === 'X') {
@@ -157,17 +173,17 @@
         }
 
         // 放置棋子
-        function placeMove(row, col, player) {
+        function placeMove(row, col, player, color = 'black') {
             cells[row][col].textContent = player;
-            cells[row][col].classList.add(player);
+            cells[row][col].classList.add(player, color);
         }
 
         // 检查胜利条件
         function checkWin(row, col, player) {
-            return checkDirection(row, col, player, 1, 0) || // 水平
-                   checkDirection(row, col, player, 0, 1) || // 垂直
-                   checkDirection(row, col, player, 1, 1) || // 主对角线
-                   checkDirection(row, col, player, 1, -1);  // 副对角线
+            return checkDirection(row, col, player, 1, 0) ||
+                   checkDirection(row, col, player, 0, 1) ||
+                   checkDirection(row, col, player, 1, 1) ||
+                   checkDirection(row, col, player, 1, -1);
         }
 
         function checkDirection(row, col, player, dx, dy) {
@@ -188,7 +204,7 @@
             for (let row = 0; row < rows; row++) {
                 for (let col = 0; col < cols; col++) {
                     cells[row][col].textContent = '';
-                    cells[row][col].classList.remove('X', 'O');
+                    cells[row][col].classList.remove('X', 'O', 'black', 'white');
                 }
             }
             currentPlayer = 'X';
