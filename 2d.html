@@ -135,15 +135,22 @@
             }
 
             // 检测与敌人的碰撞
-            for (let enemy of enemies) {
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                const enemy = enemies[i];
                 if (player.x < enemy.x + enemy.width && player.x + player.width > enemy.x &&
                     player.y < enemy.y + enemy.height && player.y + player.height > enemy.y) {
-                    // 显示游戏结束信息并重启
-                    setTimeout(() => {
-                        if (confirm('游戏结束! 你的分数: ' + score + '\n点击确定重启游戏。')) {
-                            document.location.reload();
-                        }
-                    }, 100);
+                    // 玩家从上方踩到敌人
+                    if (player.dy > 0 && player.y + player.height <= enemy.y + 10) {
+                        enemies.splice(i, 1); // 踩死敌人
+                        score += 20; // 增加分数
+                    } else {
+                        // 显示游戏结束信息并重启
+                        setTimeout(() => {
+                            if (confirm('游戏结束! 你的分数: ' + score + '\n点击确定重启游戏。')) {
+                                document.location.reload();
+                            }
+                        }, 100);
+                    }
                 }
             }
         }
@@ -206,3 +213,4 @@
     </script>
 </body>
 </html>
+
