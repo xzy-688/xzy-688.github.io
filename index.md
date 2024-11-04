@@ -17,7 +17,7 @@
 ## [心得体会](reflections.md) 
 
 ## 休闲娱乐
-- [五子棋](gomoku.html)
+- [井字棋](gomoku.html)
 - [扫雷](bomb.html)
 - [迷宫](maze.html)
 
