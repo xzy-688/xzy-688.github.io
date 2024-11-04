@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>勇者之路</title>
+    <title>横版闯关游戏</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             text-align: center;
-            background-color: #87CEEB; /* 天空蓝背景 */
+            background-color: #FFFFFF; /* 白色背景 */
         }
         canvas {
             border: 2px solid #000;
@@ -75,7 +75,7 @@
             ];
 
             enemies = [
-                { x: 300, y: 320, width: 30, height: 30, dx: 2 } // 移动敌人
+                { x: 300, y: 320, width: 30, height: 30, dx: 1 } // 降低敌人的移动速度
             ];
         }
 
@@ -183,10 +183,10 @@
                 player.grounded = false;
             }
             if (event.key === 'ArrowRight') {
-                player.x += 5; // 向右移动
+                player.x += 8; // 增加角色的移动速度
             }
             if (event.key === 'ArrowLeft') {
-                player.x -= 5; // 向左移动
+                player.x -= 8; // 增加角色的移动速度
             }
             if (event.key === 'Enter' && score >= 20) { // 假设每关需要20分
                 level++;
@@ -206,5 +206,3 @@
     </script>
 </body>
 </html>
-
-
