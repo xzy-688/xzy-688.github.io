@@ -50,10 +50,10 @@
             width: 30,
             height: 30,
             dy: 0,
-            gravity: 0.5,
-            jumpPower: -12, // 增加跳跃力度
+            gravity: 0.3,
+            jumpPower: -15, // 增加跳跃力度
             grounded: false,
-            moveSpeed: 8 // 增加角色移动速度
+            moveSpeed: 20 // 增加角色移动速度
         };
 
         let platforms = [];
@@ -231,7 +231,7 @@
             player.y = 300;
             player.dy = 0;
             score = 0; // 重置分数
-            level = 1; // 重置关卡
+            level = level+1; // 重置关卡
             initializeLevel();
             update();
         });
