@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>横版闯关游戏</title>
+    <title>勇者之路</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -13,10 +13,20 @@
         canvas {
             border: 2px solid #000;
         }
+        #instructions {
+            margin: 20px;
+            font-size: 16px;
+        }
     </style>
 </head>
 <body>
     <h1>横版闯关游戏</h1>
+    <div id="instructions">
+        <p>控制角色：</p>
+        <p>按←向左移动，按→向右移动，按↑跳跃。</p>
+        <p>收集星星增加分数，避免碰到敌人。</p>
+        <p>按Enter键进入下一关卡（每关需要20分）。</p>
+    </div>
     <canvas id="gameCanvas" width="800" height="400"></canvas>
     <button id="startButton">开始游戏</button>
     <h2 id="status"></h2>
@@ -24,6 +34,15 @@
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
+
+        const playerImage = new Image();
+        playerImage.src = 'player.png'; // 请替换为实际角色图像路径
+
+        const enemyImage = new Image();
+        enemyImage.src = 'enemy.png'; // 请替换为实际敌人图像路径
+
+        const starImage = new Image();
+        starImage.src = 'star.png'; // 请替换为实际星星图像路径
 
         let player = {
             x: 50,
@@ -61,8 +80,7 @@
         }
 
         function drawPlayer() {
-            ctx.fillStyle = '#FF0000';
-            ctx.fillRect(player.x, player.y, player.width, player.height);
+            ctx.drawImage(playerImage, player.x, player.y, player.width, player.height);
         }
 
         function drawPlatforms() {
@@ -73,16 +91,14 @@
         }
 
         function drawStars() {
-            ctx.fillStyle = '#FFD700';
             stars.forEach(star => {
-                ctx.fillRect(star.x, star.y, star.width, star.height);
+                ctx.drawImage(starImage, star.x, star.y, star.width, star.height);
             });
         }
 
         function drawEnemies() {
-            ctx.fillStyle = '#0000FF';
             enemies.forEach(enemy => {
-                ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+                ctx.drawImage(enemyImage, enemy.x, enemy.y, enemy.width, enemy.height);
             });
         }
 
@@ -118,12 +134,16 @@
                 }
             }
 
-            // 检测与障碍物的碰撞
+            // 检测与敌人的碰撞
             for (let enemy of enemies) {
                 if (player.x < enemy.x + enemy.width && player.x + player.width > enemy.x &&
                     player.y < enemy.y + enemy.height && player.y + player.height > enemy.y) {
-                    alert('游戏结束! 你的分数: ' + score);
-                    document.location.reload();
+                    // 显示游戏结束信息并重启
+                    setTimeout(() => {
+                        if (confirm('游戏结束! 你的分数: ' + score + '\n点击确定重启游戏。')) {
+                            document.location.reload();
+                        }
+                    }, 100);
                 }
             }
         }
@@ -186,4 +206,5 @@
     </script>
 </body>
 </html>
+
 
