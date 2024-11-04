@@ -1,1 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>弹球游戏</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        canvas {
+            border: 2px solid #000;
+            background: #f0f0f0;
+        }
+        #gameStatus {
+            font-size: 18px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>弹球游戏</h1>
+    <canvas id="gameCanvas" width="480" height="320"></canvas>
+    <button id="startButton">开始游戏</button>
+    <h2 id="gameStatus"></h2>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let ballRadius = 10;
+        let x = canvas.width / 2;
+        let y = canvas.height - 30;
+        let dx = 2;
+        let dy = -2;
+        const paddleHeight = 10;
+        const paddleWidth = 75;
+        let paddleX = (canvas.width - paddleWidth) / 2;
+        let rightPressed = false;
+        let leftPressed = false;
+        let score = 0;
+        let level = 1;
+        let obstacles = [];
+        const obstacleCount = 3;
+
+        // 生成障碍物
+        function generateObstacles() {
+            obstacles = [];
+            for (let i = 0; i < obstacleCount; i++) {
+                const width = Math.random() * 60 + 20; // 障碍物宽度
+                const height = 10;
+                const x = Math.random() * (canvas.width - width);
+                const y = Math.random() * (canvas.height - 100); // 避免障碍物在底部
+                obstacles.push({ x, y, width, height });
+            }
+        }
+
+        document.addEventListener('keydown', keyDownHandler);
+        document.addEventListener('keyup', keyUpHandler);
+
+        function keyDownHandler(event) {
+            if (event.key === 'Right' || event.key === 'ArrowRight') {
+                rightPressed = true;
+            } else if (event.key === 'Left' || event.key === 'ArrowLeft') {
+                leftPressed = true;
+            }
+        }
+
+        function keyUpHandler(event) {
+            if (event.key === 'Right' || event.key === 'ArrowRight') {
+                rightPressed = false;
+            } else if (event.key === 'Left' || event.key === 'ArrowLeft') {
+                leftPressed = false;
+            }
+        }
+
+        function drawBall() {
+            ctx.beginPath();
+            ctx.arc(x, y, ballRadius, 0, Math.PI * 2);
+            ctx.fillStyle = '#0095DD';
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        function drawPaddle() {
+            ctx.beginPath();
+            ctx.rect(paddleX, canvas.height - paddleHeight, paddleWidth, paddleHeight);
+            ctx.fillStyle = '#0095DD';
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        function drawObstacles() {
+            obstacles.forEach(obstacle => {
+                ctx.beginPath();
+                ctx.rect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+                ctx.fillStyle = '#FF5733';
+                ctx.fill();
+                ctx.closePath();
+            });
+        }
+
+        function drawScore() {
+            ctx.font = '16px Arial';
+            ctx.fillStyle = '#0095DD';
+            ctx.fillText('分数: ' + score, 8, 20);
+            ctx.fillText('级别: ' + level, canvas.width - 65, 20);
+        }
+
+        function collisionDetection() {
+            // 检测与挡板的碰撞
+            if (y + ballRadius > canvas.height - paddleHeight && x > paddleX && x < paddleX + paddleWidth) {
+                dy = -dy;
+                score++;
+                if (score % 5 === 0) {
+                    level++;
+                    dx += dx > 0 ? 0.5 : -0.5; // 提升速度
+                    dy += dy > 0 ? 0.5 : -0.5;
+                }
+            }
+
+            // 检测与障碍物的碰撞
+            obstacles.forEach(obstacle => {
+                if (x + ballRadius > obstacle.x && x - ballRadius < obstacle.x + obstacle.width &&
+                    y + ballRadius > obstacle.y && y - ballRadius < obstacle.y + obstacle.height) {
+                    dy = -dy; // 反弹
+                }
+            });
+
+            // 检测是否掉出底部
+            if (y + ballRadius > canvas.height) {
+                alert('游戏结束! 你的分数: ' + score);
+                document.location.reload();
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawBall();
+            drawPaddle();
+            drawObstacles();
+            drawScore();
+            collisionDetection();
+
+            if (x + dx > canvas.width - ballRadius || x + dx < ballRadius) {
+                dx = -dx;
+            }
+            if (y + dy < ballRadius) {
+                dy = -dy;
+            }
+            if (rightPressed && paddleX < canvas.width - paddleWidth) {
+                paddleX += 7;
+            } else if (leftPressed && paddleX > 0) {
+                paddleX -= 7;
+            }
+
+            x += dx;
+            y += dy;
+            requestAnimationFrame(draw);
+        }
+
+        document.getElementById('startButton').addEventListener('click', () => {
+            score = 0;
+            level = 1;
+            dx = 2;
+            dy = -2;
+            paddleX = (canvas.width - paddleWidth) / 2;
+            x = canvas.width / 2;
+            y = canvas.height - 30;
+            generateObstacles();
+            draw();
+        });
+    </script>
+</body>
+</html>
 
