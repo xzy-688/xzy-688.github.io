@@ -20,6 +20,7 @@
 - [井字棋](gomoku.html)
 - [扫雷](bomb.html)
 - [迷宫](maze.html)
+- [弹球](pinball.html)
 
 
 
