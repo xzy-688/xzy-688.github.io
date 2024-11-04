@@ -51,9 +51,9 @@
             height: 30,
             dy: 0,
             gravity: 0.5,
-            jumpPower: -10,
+            jumpPower: -12, // 增加跳跃力度
             grounded: false,
-            moveSpeed: 5
+            moveSpeed: 8 // 增加角色移动速度
         };
 
         let platforms = [];
@@ -204,7 +204,7 @@
 
         document.addEventListener('keydown', event => {
             if (event.key === 'ArrowUp' && player.grounded) {
-                player.dy = player.jumpPower;
+                player.dy = player.jumpPower; // 增加跳跃力度
                 player.grounded = false;
             }
             if (event.key === 'ArrowRight') {
@@ -217,6 +217,13 @@
                 level++;
                 score = 0; // 重置分数
                 initializeLevel(); // 初始化下一个关卡
+            }
+        });
+
+        // 禁止默认滚动行为
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'ArrowUp') {
+                event.preventDefault();
             }
         });
 
