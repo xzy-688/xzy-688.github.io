@@ -53,14 +53,14 @@
             gravity: 0.3,
             jumpPower: -15, // 增加跳跃力度
             grounded: false,
-            moveSpeed: 20 // 增加角色移动速度
+            moveSpeed: 40 // 增加角色移动速度
         };
 
         let platforms = [];
         let stars = [];
         let enemies = [];
         let score = 0;
-        let level = 1;
+        let level = 0;
 
         function initializeLevel() {
             platforms = [
@@ -215,7 +215,7 @@
             }
             if (event.key === 'Enter' && score >= 20) { // 假设每关需要20分
                 level++;
-                score = 0; // 重置分数
+                score = score-20; // 重置分数
                 initializeLevel(); // 初始化下一个关卡
             }
         });
